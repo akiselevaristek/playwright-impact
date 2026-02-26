@@ -1,6 +1,6 @@
 {
   "name": "@autotests/playwright-impact",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "Core impacted-test selection library for changed POM/method analysis",
   "license": "MIT",
   "repository": "github:akiselevaristek/playwright-impact",
