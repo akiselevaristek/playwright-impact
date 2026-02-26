@@ -1,13 +1,21 @@
 {
-  "name": "@autotests/test-impact-core",
-  "version": "0.1.0",
-  "private": true,
+  "name": "@autotests/playwright-impact",
+  "version": "0.1.1",
   "description": "Core impacted-test selection library for changed POM/method analysis",
+  "license": "ISC",
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js"
   },
   "types": "src/index.d.ts",
+  "files": [
+    "src",
+    "tests",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "commonjs",
   "engines": {
     "node": ">=18"
