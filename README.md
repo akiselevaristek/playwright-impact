@@ -1,49 +1,37 @@
 # test-impact-core
 
-Core library for selecting impacted Playwright specs from changed POM methods.
+If you use Playwright + POM and your CI runs are slow, this library selects only specs affected by your changes.
+
+It reads changed files, finds impacted specs, and helps you run only what matters.
 
 ## Install
 
 ```bash
 // npm
-npm i @autotests/test-impact-core
+npm i @autotests/playwright-impact
 
 // pnpm
-pnpm add @autotests/test-impact-core
+pnpm add @autotests/playwright-impact
 ```
 
-## Public API
+## Quick Start (Copy & Run)
+
+### Minimal working code
+
+Create `impact.js` in your repo root:
 
 ```js
-const { analyzeImpactedSpecs } = require('@autotests/test-impact-core');
-```
-
-## Quick start
-
-```js
-const { analyzeImpactedSpecs } = require('@autotests/test-impact-core');
-
-const repoRoot = process.cwd();
-
-const profile = {
-  // Root directory where your Playwright specs live.
-  testsRootRelative: 'tests-app',
-  // Prefix used to mark directly changed specs from git diff output.
-  changedSpecPrefix: 'tests-app/',
-  // Your project-specific "what is a relevant POM/utility source file" rule.
-  isRelevantPomPath: (filePath) =>
-    (filePath.startsWith('src/pages/') || filePath.startsWith('src/utils/')) &&
-    (filePath.endsWith('.ts') || filePath.endsWith('.tsx')),
-  // Directories scanned to build inheritance and call graphs.
-  analysisRootsRelative: ['src/pages', 'src/utils'],
-  // File used to map fixture keys to class names.
-  fixturesTypesRelative: 'src/fixtures/types.ts',
-};
+const { analyzeImpactedSpecs } = require('@autotests/playwright-impact');
 
 const result = analyzeImpactedSpecs({
-  repoRoot,
-  baseRef: 'origin/main',
-  profile,
+  repoRoot: process.cwd(),
+  profile: {
+    testsRootRelative: 'tests',
+    changedSpecPrefix: 'tests/',
+    isRelevantPomPath: (filePath) =>
+      (filePath.startsWith('src/pages/') || filePath.startsWith('src/utils/')) &&
+      (filePath.endsWith('.ts') || filePath.endsWith('.tsx')),
+  },
 });
 
 if (!result.hasAnythingToRun) {
@@ -51,117 +39,111 @@ if (!result.hasAnythingToRun) {
   process.exit(0);
 }
 
-console.log('Run impacted specs only:');
 for (const spec of result.selectedSpecsRelative) {
   console.log(spec);
 }
 ```
 
-## Configuration
+Save as `impact.js`
 
-### `analyzeImpactedSpecs(options)`
+Run: `node impact.js`
 
-- `repoRoot` (required): absolute path to repository root.
-- `profile` (required): project configuration object.
-- `baseRef` (optional): git ref for comparison (example: `origin/main`).
-- `includeUntrackedSpecs` (optional, default `true`): include untracked `*.spec.ts`/`*.spec.tsx` as direct changed specs.
-- `includeWorkingTreeWithBase` (optional, default `true`): when `baseRef` is set, union committed diff (`base...HEAD`) with current working tree diff (`HEAD`).
-- `fileExtensions` (optional, default `['.ts', '.tsx']`): file extensions to analyze.
-- `selectionBias` (optional, default `'fail-open'`): uncertain call-site behavior.
+Use output paths in your Playwright CLI
 
-### `profile` fields
+### What you need to change
 
-- `testsRootRelative` (required): tests root relative path.
-- `changedSpecPrefix` (required): prefix for direct changed spec detection.
-- `isRelevantPomPath(filePath)` (required): function that returns true for relevant POM/utility files.
-- `analysisRootsRelative` (optional): roots for class/method graph scan. Default: `['src/pages', 'src/utils']`.
-- `fixturesTypesRelative` (optional): fixture map file path. Default: `src/fixtures/types.ts`.
+You only need to adjust:
 
-## Common usage patterns
+- `testsRootRelative`: folder where your Playwright specs live.
+- `changedSpecPrefix`: prefix used to detect directly changed specs.
+- `isRelevantPomPath`: rule for which source files are treated as POM/utility inputs.
 
-### 1) CI mode (compare feature branch against main)
+### Example output
+
+Example output:
+
+```text
+tests/auth/login.spec.ts
+tests/cart/cart.spec.ts
+```
+
+If nothing is impacted:
+
+```text
+No impacted specs found
+```
+
+## Minimal CI Script
+
+Use this when your branch is compared to `origin/main`.
 
 ```js
-const { analyzeImpactedSpecs } = require('@autotests/test-impact-core');
+const { analyzeImpactedSpecs } = require('@autotests/playwright-impact');
 
 const result = analyzeImpactedSpecs({
   repoRoot: process.cwd(),
   baseRef: 'origin/main',
-  includeWorkingTreeWithBase: true,
-  includeUntrackedSpecs: true,
-  selectionBias: 'fail-open',
   profile: {
     testsRootRelative: 'tests',
     changedSpecPrefix: 'tests/',
-    isRelevantPomPath: (filePath) => filePath.startsWith('src/pages/') && (filePath.endsWith('.ts') || filePath.endsWith('.tsx')),
-    analysisRootsRelative: ['src/pages', 'src/utils'],
-    fixturesTypesRelative: 'src/fixtures/types.ts',
+    isRelevantPomPath: (filePath) =>
+      (filePath.startsWith('src/pages/') || filePath.startsWith('src/utils/')) &&
+      (filePath.endsWith('.ts') || filePath.endsWith('.tsx')),
   },
 });
 
-console.log(result.selectedSpecsRelative);
-```
-
-### 2) Strict mode (drop uncertain matches)
-
-```js
-const { analyzeImpactedSpecs } = require('@autotests/test-impact-core');
-
-const result = analyzeImpactedSpecs({
-  repoRoot: process.cwd(),
-  profile,
-  selectionBias: 'fail-closed',
-});
-
-console.log(result.selectedSpecsRelative);
-```
-
-### 3) Custom extensions
-
-```js
-const { analyzeImpactedSpecs } = require('@autotests/test-impact-core');
-
-const result = analyzeImpactedSpecs({
-  repoRoot: process.cwd(),
-  profile,
-  fileExtensions: ['.ts'], // ignore .tsx
-});
-
-console.log(result.selectedSpecsRelative);
-```
-
-## Result fields you usually need
-
-- `selectedSpecsRelative`: relative paths for your test runner CLI.
-- `hasAnythingToRun`: quick boolean for early exit.
-- `selectionReasons`: reason code per selected spec.
-- `warnings`: compatibility or uncertainty warnings.
-- `coverageStats.uncertainCallSites`: count of uncertain call sites encountered.
-- `coverageStats.statusFallbackHits`: count of git status fallbacks (`C/T/U/unknown`).
-- `changedEntriesBySource`: diagnostics for diff sources (`base...HEAD`, working tree, untracked).
-
-Example:
-
-```js
-for (const [absPath, reason] of result.selectionReasons.entries()) {
-  console.log(reason, absPath);
+if (!result.hasAnythingToRun) {
+  console.log('No impacted specs found');
+  process.exit(0);
 }
 
-if (result.warnings.length > 0) {
-  console.warn('Warnings:');
-  for (const warning of result.warnings) console.warn(`- ${warning}`);
-}
+console.log(result.selectedSpecsRelative.join(' '));
 ```
 
-## Reason codes
+## Typical CI Usage
 
-- `direct-changed-spec`: spec was directly changed in git/untracked set.
-- `matched-precise`: spec has precise impacted fixture method usage.
-- `matched-uncertain-fail-open`: uncertain match retained by fail-open policy.
-- `retained-no-bindings`: spec kept because no fixture bindings were found in callback params.
+1. Compare current branch with `origin/main`.
+2. Compute impacted specs.
+3. Exit with `0` if nothing should run.
+4. Pass `selectedSpecsRelative` to your Playwright runner.
 
-## Notes
+## How It Works (High Level)
 
-- This library is intentionally pragmatic and defaults to `selectionBias: 'fail-open'`.
-- For maximum safety, use `fail-open` in CI and monitor `warnings`/`uncertainCallSites`.
-- Use deterministic input (`baseRef`, clean profile predicates) for deterministic output.
+1. Read changed files from Git.
+2. Include directly changed specs.
+3. Detect impacted specs from changed POM/utility code.
+4. Return a final spec list.
+
+## Advanced Config
+
+Required:
+
+- `repoRoot`
+- `profile.testsRootRelative`
+- `profile.changedSpecPrefix`
+- `profile.isRelevantPomPath(filePath)`
+
+Optional:
+
+- `analysisRootsRelative`
+- `fixturesTypesRelative`
+- `baseRef`
+- `includeUntrackedSpecs`
+- `includeWorkingTreeWithBase`
+- `fileExtensions`
+- `selectionBias`
+
+## Advanced Diagnostics
+
+- `warnings`
+- `selectionReasons`
+- `coverageStats.uncertainCallSites`
+- `coverageStats.statusFallbackHits`
+- `changedEntriesBySource`
+
+## Reason Codes
+
+- `direct-changed-spec`
+- `matched-precise`
+- `matched-uncertain-fail-open`
+- `retained-no-bindings`
