@@ -1,8 +1,16 @@
 {
   "name": "@autotests/playwright-impact",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Core impacted-test selection library for changed POM/method analysis",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akiselevaristek/playwright-impact.git"
+  },
+  "homepage": "https://github.com/akiselevaristek/playwright-impact#readme",
+  "bugs": {
+    "url": "https://github.com/akiselevaristek/playwright-impact/issues"
+  },
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js"
@@ -11,7 +19,8 @@
   "files": [
     "src",
     "tests",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public"
