@@ -44,6 +44,34 @@ const createBaseRepo = () => {
   return dir;
 };
 
+test('README minimal profile style works with tests/ root and reports changed spec', () => {
+  const dir = createTempDir();
+  initGitRepo(dir);
+
+  writeFile(dir, 'src/pages/LoginPage.ts', 'export class LoginPage { open(){ return 1; } }\n');
+  writeFile(dir, 'src/utils/session.ts', 'export const getSession = () => "ok";\n');
+  writeFile(dir, 'src/fixtures/types.ts', 'type T = { loginPage: Pages.LoginPage };\n');
+  writeFile(dir, 'tests/auth/login.spec.ts', 'test("login", async ({ loginPage }) => { await loginPage.open(); });\n');
+  commitAll(dir, 'base');
+
+  const profile = {
+    testsRootRelative: 'tests',
+    changedSpecPrefix: 'tests/',
+    isRelevantPomPath: (filePath) =>
+      (filePath.startsWith('src/pages/') || filePath.startsWith('src/utils/')) &&
+      (filePath.endsWith('.ts') || filePath.endsWith('.tsx')),
+  };
+
+  const cleanResult = analyzeImpactedSpecs({ repoRoot: dir, profile });
+  assert.equal(cleanResult.hasAnythingToRun, false);
+
+  writeFile(dir, 'tests/auth/login.spec.ts', 'test("login", async ({ loginPage }) => { await loginPage.open(); await loginPage.open(); });\n');
+
+  const changedResult = analyzeImpactedSpecs({ repoRoot: dir, profile });
+  assert.equal(changedResult.hasAnythingToRun, true);
+  assert.equal(changedResult.selectedSpecsRelative.includes('tests/auth/login.spec.ts'), true);
+});
+
 test('analyzeImpactedSpecs returns no work when nothing changed', () => {
   const dir = createBaseRepo();
   const result = analyzeImpactedSpecs({ repoRoot: dir, profile: genericProfile, includeUntrackedSpecs: true });
