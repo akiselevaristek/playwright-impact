@@ -1,4 +1,4 @@
-# test-impact-core
+# Playwright Test Impact
 
 If you use Playwright + POM and your CI runs are slow, this library selects only specs affected by your changes.
 
