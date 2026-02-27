@@ -69,7 +69,7 @@ const analyzeImpactedSpecs = ({
   const analysisRootsRelative = profile.analysisRootsRelative || ['src/pages', 'src/utils'];
   const fixturesTypesRelative = profile.fixturesTypesRelative || 'src/fixtures/types.ts';
   const globalWatchMode = profile.globalWatchMode || DEFAULT_GLOBAL_WATCH_MODE;
-  const globalWatchPatterns = Array.isArray(profile.globalWatchPatterns) && profile.globalWatchPatterns.length > 0
+  const globalWatchPatterns = Array.isArray(profile.globalWatchPatterns)
     ? profile.globalWatchPatterns
     : getDefaultGlobalWatchPatterns();
 

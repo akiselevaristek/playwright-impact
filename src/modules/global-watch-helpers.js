@@ -4,21 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const ts = require('typescript');
 
-const DEFAULT_GLOBAL_WATCH_PATTERNS = [
-  'playwright.stem.config.ts',
-  'playwright.mn.config.ts',
-  'playwright.e2e.config.ts',
-  'src/global-setup.ts',
-  'src/global-setup-stem.ts',
-  'src/global-setup-mn.ts',
-  'src/fixtures/**',
-  'src/setup/**',
-  'src/config/config.ts',
-  'src/config/urls.ts',
-  'src/reporters/**',
-  'src/scripts/verify-*.js',
-  'src/api/mocks/**',
-];
+const DEFAULT_GLOBAL_WATCH_PATTERNS = [];
 
 const WATCH_DEP_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.yml', '.yaml'];
 
@@ -246,7 +232,7 @@ const evaluateGlobalWatch = ({
   patterns,
   listFilesRecursive,
 }) => {
-  const effectivePatterns = Array.isArray(patterns) && patterns.length > 0 ? patterns : getDefaultGlobalWatchPatterns();
+  const effectivePatterns = Array.isArray(patterns) ? patterns : getDefaultGlobalWatchPatterns();
   const patternRegexes = effectivePatterns.map((pattern) => globToRegex(normalizePath(pattern).replace(/^\.\//, '')));
   const closure = resolveGlobalWatchClosure({ repoRoot, patterns: effectivePatterns, listFilesRecursive });
   const matched = new Set();

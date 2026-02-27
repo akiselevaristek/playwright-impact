@@ -218,7 +218,13 @@ test('Detect modified POM file (M) and include impacted specs', () => {
   const dir = createBaseRepo();
   writeFile(dir, 'src/pages/MyPage.ts', 'export class MyPage { target(){ return 10; } open(){ return this.target(); } }\\n');
 
-  const result = analyzeImpactedSpecs({ repoRoot: dir, profile: genericProfile });
+  const result = analyzeImpactedSpecs({
+    repoRoot: dir,
+    profile: {
+      ...genericProfile,
+      globalWatchPatterns: ['playwright.stem.config.ts'],
+    },
+  });
   assert.equal(result.changedPomEntries.some((entry) => entry.status === 'M'), true);
   assert.equal(result.selectedSpecsRelative.includes('tests-app/basic.spec.ts'), true);
 });
@@ -238,7 +244,13 @@ test('Detect deleted POM file (D) and include relevant specs', () => {
   const dir = createBaseRepo();
   run(dir, 'git', ['rm', 'src/pages/MyPage.ts']);
 
-  const result = analyzeImpactedSpecs({ repoRoot: dir, profile: genericProfile });
+  const result = analyzeImpactedSpecs({
+    repoRoot: dir,
+    profile: {
+      ...genericProfile,
+      globalWatchPatterns: ['playwright.stem.config.ts'],
+    },
+  });
   assert.equal(result.changedPomEntries.some((entry) => entry.status === 'D'), true);
   assert.equal(result.selectedSpecsRelative.includes('tests-app/basic.spec.ts'), true);
 });
@@ -442,7 +454,13 @@ test('Global watch change in playwright.stem.config.ts forces all project specs'
 
   writeFile(dir, 'playwright.stem.config.ts', 'export default { retries: 1 };\n');
 
-  const result = analyzeImpactedSpecs({ repoRoot: dir, profile: genericProfile });
+  const result = analyzeImpactedSpecs({
+    repoRoot: dir,
+    profile: {
+      ...genericProfile,
+      globalWatchPatterns: ['playwright.stem.config.ts'],
+    },
+  });
   assert.equal(result.forcedAllSpecs, true);
   assert.equal(result.forcedAllSpecsReason, 'global-watch-force-all');
   assert.equal(result.selectedSpecsRelative.includes('tests-app/basic.spec.ts'), true);
@@ -467,6 +485,7 @@ test('Global watch change in src/global-setup-mn.ts forces all mathnation specs'
       ...genericProfile,
       testsRootRelative: 'tests-mathnation',
       changedSpecPrefix: 'tests-mathnation/',
+      globalWatchPatterns: ['src/global-setup-mn.ts'],
     },
   });
   assert.equal(result.forcedAllSpecs, true);
